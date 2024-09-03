@@ -15,13 +15,13 @@ def natural_cubic_spline(x, y):
     return CubicSpline(x, y, bc_type='natural')
 
 # Datos de ejemplo
-x = np.array([0, 1, 2, 3, 4, 5])
-y = np.array([2, 1, 4, 3, 5, 4])
+x = np.array([1, 2, 3])
+y = np.array([1, 0.5, 0.3333333])
 
-# Crear splines
-linear = linear_spline(x, y)
-quadratic = quadratic_spline(x, y)
-cubic = cubic_spline(x, y)
+# # Crear splines
+# linear = linear_spline(x, y)
+# quadratic = quadratic_spline(x, y)
+# cubic = cubic_spline(x, y)
 natural = natural_cubic_spline(x, y)
 
 # Crear puntos para graficar
@@ -40,9 +40,9 @@ def plot_spline(ax, x_plot, spline, title):
     ax.grid(True)
 
 # Graficar cada spline
-plot_spline(axs[0, 0], x_plot, linear, 'Spline Lineal')
-plot_spline(axs[0, 1], x_plot, quadratic, 'Spline Cuadrático')
-plot_spline(axs[1, 0], x_plot, cubic, 'Spline Cúbico')
+# plot_spline(axs[0, 0], x_plot, linear, 'Spline Lineal')
+# plot_spline(axs[0, 1], x_plot, quadratic, 'Spline Cuadrático')
+# plot_spline(axs[1, 0], x_plot, cubic, 'Spline Cúbico')
 plot_spline(axs[1, 1], x_plot, natural, 'Spline Cúbico Natural')
 
 plt.tight_layout()
@@ -51,7 +51,7 @@ plt.show()
 # Evaluar cada spline en un punto de ejemplo
 x_eval = 2.5
 print(f"Valores interpolados en x = {x_eval}:")
-print(f"Spline Lineal: {linear(x_eval):.4f}")
-print(f"Spline Cuadrático: {quadratic(x_eval):.4f}")
-print(f"Spline Cúbico: {cubic(x_eval):.4f}")
+# print(f"Spline Lineal: {linear(x_eval):.4f}")
+# print(f"Spline Cuadrático: {quadratic(x_eval):.4f}")
+# print(f"Spline Cúbico: {cubic(x_eval):.4f}")
 print(f"Spline Cúbico Natural: {natural(x_eval):.4f}")

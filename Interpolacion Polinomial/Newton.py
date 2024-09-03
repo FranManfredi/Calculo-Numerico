@@ -39,8 +39,11 @@ def newton_interpolation_polynomial(x, y):
     return p
 
 # Ejemplo de uso
-x = [0, 1, 2, 3]
-y = [1, 2, 4, 8]
+# x = [0, 1, 2, 3, 4, 5, 6,7, 8, 9, 10, 11, 12]
+# y = [300, 360.65, 373.58, 366.94, 354.13, 341.04, 329.87, 321.14, 314.65, 310, 306.74, 304.50, 302.97]
+
+x = [150, 1]
+y = [300, 360.65, 373.58, 366.94, 354.13, 341.04, 329.87, 321.14, 314.65, 310, 306.74, 304.50, 302.97]
 
 p = newton_interpolation_polynomial(x, y)
 
@@ -48,6 +51,6 @@ print("Polinomio interpolador:")
 print(p.string())
 
 # Evaluar el polinomio en un punto
-x_interp = 1.5
+x_interp = 14
 resultado = p(x_interp)
 print(f"\nEl valor interpolado en x = {x_interp} es {resultado}")
