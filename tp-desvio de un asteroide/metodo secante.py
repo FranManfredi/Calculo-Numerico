@@ -13,8 +13,8 @@ r_asteroide = 2.24775e9  # Posición radial del asteroide (m)
 theta_asteroide = 2.303834613  # Posición angular del asteroide (rad)
 
 # Parámetros de simulación (optimizados)
-dt = 100  # Aumentado el paso de tiempo (s)
-num_steps = 100000  # Reducido el número de pasos para la simulación
+dt = 10  # Aumentado el paso de tiempo (s)
+num_steps = 604035  # Reducido el número de pasos para la simulación
 
 # Función de aceleración radial debido a la gravedad
 def radial_acceleration(r):
@@ -55,7 +55,7 @@ def final_distance(v_r_initial, v_theta_initial):
     return distance_to_asteroid
 
 # Método de la secante para encontrar velocidades óptimas
-def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=0.5e7):
+def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=0.9e7):
     # Evaluar la función de error para ambos conjuntos de conjeturas
     f1 = final_distance(v_r_guess1, v_theta_guess1)
     f2 = final_distance(v_r_guess2, v_theta_guess2)

@@ -8,9 +8,9 @@ M = 5.972e24  # Mass of Earth (kg)
 # Initial conditions for the satellite
 r_satelite = 1.22e9  # Initial radial position of the satellite (m)
 theta_satelite = 0.0  # Initial angular position of the satellite (rad)
-v_r_satelite = 600  # Initial radial velocity (m/s) - increased for testing
-v_theta_satelite = 800  # Initial angular velocity (m/s)
-#
+v_r_satelite = 553.0 # Initial radial velocity (m/s) - increased for testing
+v_theta_satelite = 753.0  # Initial angular velocity (m/s)
+
 # Optimal radial velocity: 551.69 m/s
 # Optimal angular velocity: 751.69 m/s
 
