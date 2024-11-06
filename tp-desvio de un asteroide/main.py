@@ -22,10 +22,10 @@ r_values = []
 theta_values = []
 
 # Secant method values
-v_r_guess1 = 300
-v_r_guess2 = 1000  # Un poco más alto para comenzar
-v_theta_guess1 = 300
-v_theta_guess2 = 1000  # Un poco más alto para comenzar
+v_r_guess1 = 800
+v_r_guess2 = 900  # Un poco más alto para comenzar
+v_theta_guess1 = 0
+v_theta_guess2 = 3000 # Un poco más alto para comenzar
 
 
 # Function to calculate radial acceleration due to gravity
@@ -67,7 +67,7 @@ def rk2(r_satelite, theta_satelite, v_r_satelite, v_theta_satelite):
             (r_satelite - r_asteroide) ** 2 + (r_satelite * theta_satelite - r_asteroide * theta_asteroide) ** 2
         )
         distance_to_earth = r_satelite
-        if distance_to_asteroid < 1e7:
+        if distance_to_asteroid < 1e8:
             print("Target reached!")
             break
         elif distance_to_earth < 0.01e9:
@@ -75,38 +75,54 @@ def rk2(r_satelite, theta_satelite, v_r_satelite, v_theta_satelite):
             break
 
 
-def final_distance(v_r_initial, v_theta_initial):
+def final_distance(v_r_initial, v_theta_initial, min_steps=500000, max_steps=1000000, step_interval=10000):
+    """
+    Calcula la distancia mínima al asteroide en un rango de pasos.
+    """
     # Condiciones iniciales
     r = r_satelite
     theta = theta_satelite
     v_r = v_r_initial
     v_theta = v_theta_initial
 
-    # Iterar sin almacenar datos intermedios, solo calculando el estado final
-    for _ in range(num_steps):
-        # Calcular aceleración radial en la posición actual
-        a_r = radial_acceleration(r)
+    min_distance = float('inf')  # Variable para almacenar la distancia mínima
 
-        # Método RK2 simplificado para actualizar solo el final
-        v_r_half = v_r + a_r * (dt / 2)
-        r_half = r + v_r * (dt / 2)
+    for steps in range(min_steps, max_steps, step_interval):
+        # Resetear condiciones iniciales para cada rango de steps
+        r = r_satelite
+        theta = theta_satelite
+        v_r = v_r_initial
+        v_theta = v_theta_initial
 
-        v_theta_half = v_theta * (r / r_half)
+        # Simulación para el número actual de steps
+        for _ in range(steps):
+            # Calcular aceleración radial en la posición actual
+            a_r = radial_acceleration(r)
 
-        r += v_r_half * dt
-        theta += v_theta_half * dt / r
+            # Método RK2 simplificado para actualizar solo el final
+            v_r_half = v_r + a_r * (dt / 2)
+            r_half = r + v_r * (dt / 2)
+            v_theta_half = v_theta * (r / r_half)
 
-        a_r_end = radial_acceleration(r)
-        v_r += a_r_end * dt
+            # Actualizar posición y velocidad
+            r += v_r_half * dt
+            theta += v_theta_half * dt / r
 
-        theta %= (2 * np.pi)
+            a_r_end = radial_acceleration(r)
+            v_r += a_r_end * dt
 
-    # Calcular la distancia final al asteroide
-    distance_to_asteroid = np.sqrt(
-        (r - r_asteroide) ** 2 + (r * theta - r_asteroide * theta_asteroide) ** 2
-    )
-    return distance_to_asteroid
+            theta %= (2 * np.pi)  # Asegurar que theta esté entre 0 y 2π
 
+        # Calcular distancia al asteroide al final de los steps
+        distance_to_asteroid = np.sqrt(
+            (r - r_asteroide) ** 2 + (r * theta - r_asteroide * theta_asteroide) ** 2
+        )
+
+        # Actualizar la distancia mínima si es necesario
+        if distance_to_asteroid < min_distance:
+            min_distance = distance_to_asteroid
+
+    return min_distance
 
 # Método de la secante para encontrar velocidades óptimas
 def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e7):
@@ -115,7 +131,7 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
     f2 = final_distance(v_r_guess2, v_theta_guess2)
 
     iteration = 0
-    while abs(f2) > tol and iteration < 200:
+    while abs(f2) > tol and iteration < 20:
         # Actualizar con las ecuaciones de la secante
         v_r_new = v_r_guess2 - f2 * (v_r_guess2 - v_r_guess1) / (f2 - f1)
         v_theta_new = v_theta_guess2 - f2 * (v_theta_guess2 - v_theta_guess1) / (f2 - f1)
@@ -135,7 +151,7 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
 # Ejecutar el método de la secante
 
 print("\n\nmetodo secante:\n")
-optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 0.9e7)
+optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 0.9e8)
 print()
 print(f"Optimal radial velocity: {optimal_v_r:.2f} m/s")
 print(f"Optimal angular velocity: {optimal_v_theta:.2f} m/s")
