@@ -22,10 +22,10 @@ r_values = []
 theta_values = []
 
 # Secant method values
-v_r_guess1 = 0
+v_r_guess1 = 400
 v_r_guess2 = 600  # Un poco más alto para comenzar
-v_theta_guess1 = 808
-v_theta_guess2 = 600  # Un poco más alto para comenzar
+v_theta_guess1 = 600
+v_theta_guess2 = 800  # Un poco más alto para comenzar
 
 
 # Function to calculate radial acceleration due to gravity
@@ -144,7 +144,8 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
         f2 = final_distance(v_r_guess2, v_theta_guess2)
 
         iteration += 1
-        print(f"Iteration {iteration}: Distance to asteroid = {f2:.2f} meters")
+        print(f"Iteration {iteration}: Distance to asteroid = {f2:.2f} meters | Error: {abs(f2 - tol):.2f}\n"
+              f"Initial velocity for projectile found: Theta: {v_theta_guess2:.2f} | Radial: {v_r_guess2:.2f} meters\n")
 
     return v_r_guess2, v_theta_guess2
 
@@ -152,7 +153,7 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
 # Ejecutar el método de la secante
 
 print("\n\nmetodo secante:\n")
-optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 4e7)
+optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 2.9e7)
 print()
 print(f"Optimal radial velocity: {optimal_v_r:.2f} m/s")
 print(f"Optimal angular velocity: {optimal_v_theta:.2f} m/s")
