@@ -165,8 +165,9 @@ rk2(r_satelite, theta_satelite, optimal_v_r, optimal_v_theta)
 
 # Plot the satellite's trajectory
 plt.figure(figsize=(8, 8))
-plt.polar(theta_values, r_values, label="Satellite Trajectory")
-plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Asteroid Position", markersize=10)
-plt.title("Satellite Trajectory to Target Asteroid")
+plt.polar(theta_values, r_values, label="Trayectoria del Satélite")
+plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Posición del Asteroide", markersize=10)
+plt.title("Trayectoria del Satélite hacia el Asteroide Objetivo")
 plt.legend()
 plt.show()
+
