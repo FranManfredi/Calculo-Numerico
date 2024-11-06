@@ -55,7 +55,7 @@ def final_distance(v_r_initial, v_theta_initial):
     return distance_to_asteroid
 
 # Método de la secante para encontrar velocidades óptimas
-def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=0.9e7):
+def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e7):
     # Evaluar la función de error para ambos conjuntos de conjeturas
     f1 = final_distance(v_r_guess1, v_theta_guess1)
     f2 = final_distance(v_r_guess2, v_theta_guess2)
@@ -82,6 +82,8 @@ v_r_guess1 = 500
 v_r_guess2 = 600  # Un poco más alto para comenzar
 v_theta_guess1 = 700
 v_theta_guess2 = 800  # Un poco más alto para comenzar
+
+
 
 # Ejecutar el método de la secante
 optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2)
