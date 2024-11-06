@@ -22,10 +22,10 @@ r_values = []
 theta_values = []
 
 # Secant method values
-v_r_guess1 = 800
-v_r_guess2 = 900  # Un poco más alto para comenzar
-v_theta_guess1 = 0
-v_theta_guess2 = 3000 # Un poco más alto para comenzar
+v_r_guess1 = 0
+v_r_guess2 = 600  # Un poco más alto para comenzar
+v_theta_guess1 = 808
+v_theta_guess2 = 600  # Un poco más alto para comenzar
 
 
 # Function to calculate radial acceleration due to gravity
@@ -67,7 +67,7 @@ def rk2(r_satelite, theta_satelite, v_r_satelite, v_theta_satelite):
             (r_satelite - r_asteroide) ** 2 + (r_satelite * theta_satelite - r_asteroide * theta_asteroide) ** 2
         )
         distance_to_earth = r_satelite
-        if distance_to_asteroid < 1e8:
+        if distance_to_asteroid < 3e7:
             print("Target reached!")
             break
         elif distance_to_earth < 0.01e9:
@@ -124,6 +124,7 @@ def final_distance(v_r_initial, v_theta_initial, min_steps=500000, max_steps=100
 
     return min_distance
 
+
 # Método de la secante para encontrar velocidades óptimas
 def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e7):
     # Evaluar la función de error para ambos conjuntos de conjeturas
@@ -151,7 +152,7 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
 # Ejecutar el método de la secante
 
 print("\n\nmetodo secante:\n")
-optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 0.9e8)
+optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 4e7)
 print()
 print(f"Optimal radial velocity: {optimal_v_r:.2f} m/s")
 print(f"Optimal angular velocity: {optimal_v_theta:.2f} m/s")
@@ -164,7 +165,7 @@ rk2(r_satelite, theta_satelite, optimal_v_r, optimal_v_theta)
 # Plot the satellite's trajectory
 plt.figure(figsize=(8, 8))
 plt.polar(theta_values, r_values, label="Satellite Trajectory")
-plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Asteroid Position")
+plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Asteroid Position", markersize=10)
 plt.title("Satellite Trajectory to Target Asteroid")
 plt.legend()
 plt.show()
