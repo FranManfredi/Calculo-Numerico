@@ -22,10 +22,10 @@ r_values = []
 theta_values = []
 
 # Secant method values
-v_r_guess1 = 500
-v_r_guess2 = 600  # Un poco más alto para comenzar
-v_theta_guess1 = 700
-v_theta_guess2 = 800  # Un poco más alto para comenzar
+v_r_guess1 = 300
+v_r_guess2 = 1000  # Un poco más alto para comenzar
+v_theta_guess1 = 300
+v_theta_guess2 = 1000  # Un poco más alto para comenzar
 
 
 # Function to calculate radial acceleration due to gravity
@@ -75,7 +75,7 @@ def rk2(r_satelite, theta_satelite, v_r_satelite, v_theta_satelite):
             break
 
 
-def final_distance(v_r_initial, v_theta_initial, num_steps=604035):
+def final_distance(v_r_initial, v_theta_initial):
     # Condiciones iniciales
     r = r_satelite
     theta = theta_satelite
