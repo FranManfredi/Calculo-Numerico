@@ -14,18 +14,18 @@ r_asteroide = 2.24775e9  # Radial position of the asteroid (m)
 theta_asteroide = 2.303834613  # Angular position of the asteroid (rad)
 
 # Simulation parameters
-dt = 10  # Time step (s)
-num_steps = 10000000  # Number of steps for simulation
+dt = 1  # Time step (s)
+num_steps = 50000000  # Number of steps for simulation
 
 # Lists to store trajectory data for plotting
 r_values = []
 theta_values = []
 
 # Secant method values
-v_r_guess1 = 550
-v_r_guess2 = 555  # Un poco más alto para comenzar
-v_theta_guess1 = 750
-v_theta_guess2 = 753  # Un poco más alto para comenzar
+v_r_guess1 = 500
+v_r_guess2 = 700  # Small initial radial velocities
+v_theta_guess1 = np.sqrt(G * M / r_satelite) * 0.9
+v_theta_guess2 = np.sqrt(G * M / r_satelite) * 1.1
 
 
 # Function to calculate radial acceleration due to gravity
@@ -67,85 +67,83 @@ def rk2(r_satelite, theta_satelite, v_r_satelite, v_theta_satelite):
             (r_satelite - r_asteroide) ** 2 + (r_satelite * theta_satelite - r_asteroide * theta_asteroide) ** 2
         )
         distance_to_earth = r_satelite
+        earth_radius = 6.371e6  # Radius of Earth in meters
         if distance_to_asteroid < 5e3:
             print("Target reached!")
             break
-        elif distance_to_earth < 0.01e9:
+        elif distance_to_earth <= earth_radius:
             print("Target crashed into Earth!")
             break
 
 
-def final_distance(v_r_initial, v_theta_initial, min_steps=600000, max_steps=700000, step_interval=10000):
-    """
-    Calcula la distancia mínima al asteroide en un rango de pasos.
-    """
-    # Condiciones iniciales
-    r = r_satelite
-    theta = theta_satelite
-    v_r = v_r_initial
-    v_theta = v_theta_initial
+from scipy.optimize import minimize_scalar
+def final_distance(v_r_initial, v_theta_initial, dt=0.1, max_steps=200000):
+    r_sim = r_satelite
+    theta_sim = theta_satelite
+    v_r_sim = v_r_initial
+    v_theta_sim = v_theta_initial
+    min_distance = float('inf')
 
-    min_distance = float('inf')  # Variable para almacenar la distancia mínima
+    # Run the simulation for a limited number of steps
+    for _ in range(max_steps):
+        # Calculate gravitational acceleration at current position
+        a_r_sim = radial_acceleration(r_sim)
 
-    for steps in range(min_steps, max_steps, step_interval):
-        # Resetear condiciones iniciales para cada rango de steps
-        r = r_satelite
-        theta = theta_satelite
-        v_r = v_r_initial
-        v_theta = v_theta_initial
+        # RK2 midpoint estimates
+        v_r_half = v_r_sim + a_r_sim * (dt / 2)
+        r_half = r_sim + v_r_sim * (dt / 2)
+        v_theta_half = v_theta_sim * (r_sim / r_half)
 
-        # Simulación para el número actual de steps
-        for _ in range(steps):
-            # Calcular aceleración radial en la posición actual
-            a_r = radial_acceleration(r)
+        # Update the radial and angular positions
+        r_sim += v_r_half * dt
+        theta_sim += v_theta_half * dt / r_sim
 
-            # Método RK2 simplificado para actualizar solo el final
-            v_r_half = v_r + a_r * (dt / 2)
-            r_half = r + v_r * (dt / 2)
-            v_theta_half = v_theta * (r / r_half)
+        # Update the radial velocity for the end of the time step
+        a_r_end = radial_acceleration(r_sim)
+        v_r_sim += a_r_end * dt
+        theta_sim %= (2 * np.pi)
 
-            # Actualizar posición y velocidad
-            r += v_r_half * dt
-            theta += v_theta_half * dt / r
+        # Calculate distance between the satellite and the asteroid in polar coordinates
+        delta_r = abs(r_sim - r_asteroide)
+        delta_theta = abs(theta_sim - theta_asteroide)
+        distance_to_asteroid = np.sqrt(delta_r ** 2 + (r_sim * delta_theta) ** 2)
 
-            a_r_end = radial_acceleration(r)
-            v_r += a_r_end * dt
+        # Update minimum distance encountered
+        min_distance = min(min_distance, distance_to_asteroid)
 
-            theta %= (2 * np.pi)  # Asegurar que theta esté entre 0 y 2π
-
-        # Calcular distancia al asteroide al final de los steps
-        distance_to_asteroid = np.sqrt(
-            (r - r_asteroide) ** 2 + (r * theta - r_asteroide * theta_asteroide) ** 2
-        )
-
-        # Actualizar la distancia mínima si es necesario
-        if distance_to_asteroid < min_distance:
-            min_distance = distance_to_asteroid
+        # Check for proximity to target asteroid
+        if distance_to_asteroid < 5e3:
+            print("Asteroid proximity reached in simulation.")
+            break
 
     return min_distance
 
-
-# Método de la secante para encontrar velocidades óptimas
-def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e7):
-    # Evaluar la función de error para ambos conjuntos de conjeturas
+def hybrid_secant_bisection_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e6, max_step=25, max_iterations=150):
     f1 = final_distance(v_r_guess1, v_theta_guess1)
     f2 = final_distance(v_r_guess2, v_theta_guess2)
 
-    iteration = 0
-    while abs(f2) > tol and iteration < 25:
-        # Actualizar con las ecuaciones de la secante
-        v_r_new = v_r_guess2 - f2 * (v_r_guess2 - v_r_guess1) / (f2 - f1)
-        v_theta_new = v_theta_guess2 - f2 * (v_theta_guess2 - v_theta_guess1) / (f2 - f1)
+    for iteration in range(max_iterations):
+        if abs(f2) < tol:
+            print("Converged!")
+            break
 
-        # Actualizar valores anteriores y calcular nuevo error
+        # Smaller, stable range for bisection adjustments to avoid runaway velocities
+        if f2 > f1:
+            v_r_new = (v_r_guess1 + v_r_guess2) / 2
+            v_theta_new = (v_theta_guess1 + v_theta_guess2) / 2
+            print("Switching to bisection for stability.")
+        else:
+            v_r_new = v_r_guess2 - f2 * (v_r_guess2 - v_r_guess1) / (f2 - f1)
+            v_theta_new = v_theta_guess2 - f2 * (v_theta_guess2 - v_theta_guess1) / (f2 - f1)
+            v_r_new = np.clip(v_r_new, v_r_guess2 - max_step, v_r_guess2 + max_step)
+            v_theta_new = np.clip(v_theta_new, v_theta_guess2 - max_step, v_theta_guess2 + max_step)
+
+        f1, f2 = f2, final_distance(v_r_new, v_theta_new)
         v_r_guess1, v_theta_guess1 = v_r_guess2, v_theta_guess2
-        f1 = f2
         v_r_guess2, v_theta_guess2 = v_r_new, v_theta_new
-        f2 = final_distance(v_r_guess2, v_theta_guess2)
 
-        iteration += 1
-        print(f"Iteration {iteration}: Distance to asteroid = {f2:.2f} meters | Error: {abs(f2 - tol):.2f}\n"
-              f"Initial velocity for projectile found: Theta: {v_theta_guess2:.2f} | Radial: {v_r_guess2:.2f} meters\n")
+        print(f"Iteration {iteration+1}: Distance to asteroid = {f2:.2f} meters\n"
+              f"Current initial velocity guess: Theta: {v_theta_guess2:.2f} | Radial: {v_r_guess2:.2f} m/s\n")
 
     return v_r_guess2, v_theta_guess2
 
@@ -153,7 +151,7 @@ def secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, tol=1e
 # Ejecutar el método de la secante
 
 print("\n\nmetodo secante:\n")
-optimal_v_r, optimal_v_theta = secant_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 4.9999999999e3)
+optimal_v_r, optimal_v_theta = hybrid_secant_bisection_method(v_r_guess1, v_r_guess2, v_theta_guess1, v_theta_guess2, 5000)
 print()
 print(f"Optimal radial velocity: {optimal_v_r:.2f} m/s")
 print(f"Optimal angular velocity: {optimal_v_theta:.2f} m/s")
@@ -166,8 +164,7 @@ rk2(r_satelite, theta_satelite, optimal_v_r, optimal_v_theta)
 # Plot the satellite's trajectory
 plt.figure(figsize=(8, 8))
 plt.polar(theta_values, r_values, label="Trayectoria del Satélite")
-plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Posición del Asteroide", markersize=10)
+plt.polar([theta_asteroide], [r_asteroide], 'ro', label="Posición del Asteroide", markersize=1)
 plt.title("Trayectoria del Satélite hacia el Asteroide Objetivo")
 plt.legend()
 plt.show()
-
