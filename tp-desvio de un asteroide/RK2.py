@@ -1,147 +1,105 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 
-# Constantes
-G = 6.67430e-11  # Constante gravitacional
-M = 5.972e24  # Masa de la Tierra
-h = 0.01  # Paso de tiempo
-max_secant_iter = 4500 # Número máximo de iteraciones secante antes de cambiar a bisección
-
-
-def get_initial_velocity():
-    # Conjeturas iniciales para la velocidad radial y angular
-    vr1, vr2 = 800, 100
-    vtheta1, vtheta2 = 750, 800
-    i = 0
-
-    while abs(vr2 - vr1) > 1e-4 or abs(vtheta2 - vtheta1) > 1e-7:
-        dist1 = get_trajectory_distance(vr1, vtheta1)
-        dist2 = get_trajectory_distance(vr2, vtheta2)
-
-        # Si el método de la secante no converge, cambiar a bisección
-        if i >= max_secant_iter:
-            vr3 = (vr1 + vr2) / 2
-            vtheta3 = (vtheta1 + vtheta2) / 2
-        else:
-            vr3 = secante(vr1, vr2, dist1, dist2)
-            vtheta3 = secante(vtheta1, vtheta2, dist1, dist2)
-
-        # Limitar el tamaño del salto en vr3 y vtheta3 para evitar cambios grandes
-        step_limit = 1e5
-        if abs(vr3 - vr2) > step_limit:
-            vr3 = vr2 + np.sign(vr3 - vr2) * step_limit
-        if abs(vtheta3 - vtheta2) > step_limit:
-            vtheta3 = vtheta2 + np.sign(vtheta3 - vtheta2) * step_limit
-
-        vr1, vr2 = vr2, vr3
-        vtheta1, vtheta2 = vtheta2, vtheta3
-        i += 1
-        print(f"Iteration {i}: vr = {vr3}, vtheta = {vtheta3}, g(vr, vtheta) = {dist2}")
-
-        # Comprobación de convergencia en la distancia
-        if dist2 < 1e-4:
-            break
-
-    return vr2, vtheta2
+# Constants
+G = 6.67430e-11  # Gravitational constant
+M = 5.972e24  # Mass of the Earth
+R_earth = 6.371e6  # Radius of the Earth (in meters)
+h = 1  # Time step (increased for speed)
+target_r, target_theta = 2.24775e9, 2.303834613
+max_time = 24642  # Maximum simulation time
 
 
-def get_trajectory_distance(vr_initial, vtheta_initial):
-    r = 1.22e9  # Distancia radial inicial
-    theta = 0
-    vr = vr_initial
-    vtheta = vtheta_initial
-    max_time = 10
-    target_r, target_theta = 2.24775e9, 2.303834613
-
+def get_trajectory_distance(v_initial):
+    """Calculate final distance from the target given initial velocities (vr, vtheta)."""
+    vr, vtheta = v_initial
+    r = 1.22e9  # Initial radial distance
+    theta = 0  # Initial angle
     time = 0
+
     while time < max_time:
-        # Método RK2 para actualizar velocidad radial y posición
+        # Calculate the acceleration and update velocities and position (RK-like)
         ar = -G * M / r ** 2
         vr_mid = vr + 0.5 * ar * h
         r_mid = r + 0.5 * vr * h
+        theta_mid = theta + 0.5 * vtheta * h / r if r != 0 else 0
 
-        # RK2 para la componente angular
-        vtheta_mid = vtheta
-        theta_mid = theta + 0.5 * vtheta * h / r
-
-        # Actualización de posiciones y velocidades
         vr += (-G * M / r_mid ** 2) * h
-        vtheta = vtheta_mid  # No cambia la velocidad angular
-        r += vr * h
+        r += vr_mid * h
         theta += vtheta * h / r if r != 0 else 0
+
+        # Compute distance to target
+        distance_to_target = np.sqrt((r * np.cos(theta) - target_r * np.cos(target_theta)) ** 2 +
+                                     (r * np.sin(theta) - target_r * np.sin(target_theta)) ** 2)
+
+        # Check if within impact distance
+        if distance_to_target <= 1000:
+            return 0  # Successful impact
 
         time += h
 
-    # Calcular la distancia al objetivo al final de la trayectoria
-    return np.sqrt((r * np.cos(theta) - target_r * np.cos(target_theta)) ** 2 +
-                   (r * np.sin(theta) - target_r * np.sin(target_theta)) ** 2)
+    # Return final distance if no impact occurred
+    return distance_to_target
 
 
-# Método de la secante para actualizar la velocidad radial o angular
-def secante(v1, v2, g1, g2):
-    return v2 - g2 * (v2 - v1) / (g2 - g1)
+# Optimize initial velocities
+initial_guess = [80000, 280000]  # Initial guesses for vr and vtheta
+result = minimize(get_trajectory_distance, initial_guess, method='Nelder-Mead')
+required_vr, required_vtheta = result.x
+
+print(f"The optimized initial radial velocity is approximately: {required_vr:.2f} m/s")
+print(f"The optimized initial angular velocity is approximately: {required_vtheta:.2f} m/s")
 
 
-# Calcular las velocidades radial y angular iniciales requeridas
-required_vr, required_vtheta = get_initial_velocity()
-print(f"La velocidad radial inicial requerida es aproximadamente: {required_vr} m/s")
-print(f"La velocidad angular inicial requerida es aproximadamente: {required_vtheta} m/s")
-
-
-def plot_trajectory(vr_initial, vtheta_initial, target_r, target_theta):
-    r = 1.22e9  # Distancia radial inicial (m)
-    theta = 0  # Ángulo inicial (rad)
-    vr = vr_initial  # Velocidad radial inicial
-    vtheta = vtheta_initial  # Velocidad angular inicial
-    max_time = 1000  # Tiempo máximo de simulación (s)
-
+def plot_trajectory_polar(vr_initial, vtheta_initial):
+    """Simulate and plot the trajectory in polar coordinates."""
+    r = 1.22e9  # Initial radial distance
+    theta = 0  # Initial angle
+    vr = vr_initial
+    vtheta = vtheta_initial
     time = 0
-    trajectory_r = [r]  # Lista para almacenar la distancia radial a lo largo del tiempo
-    trajectory_theta = [theta]  # Lista para almacenar el ángulo a lo largo del tiempo
+    trajectory_r = [r]
+    trajectory_theta = [theta]
 
-    # Simulación de la trayectoria utilizando el método RK2
     while time < max_time:
+        # RK-like update
         ar = -G * M / r ** 2
         vr_mid = vr + 0.5 * ar * h
         r_mid = r + 0.5 * vr * h
+        theta_mid = theta + 0.5 * vtheta * h / r if r != 0 else 0
 
-        # RK2 para la componente angular
-        vtheta_mid = vtheta
-        theta_mid = theta + 0.5 * vtheta * h / r
-
-        # Actualización de posiciones y velocidades
         vr += (-G * M / r_mid ** 2) * h
-        vtheta = vtheta_mid  # La velocidad angular no cambia
-        r += vr * h
+        r += vr_mid * h
         theta += vtheta * h / r if r != 0 else 0
 
-        # Agregar los valores actuales a la lista de trayectoria
         trajectory_r.append(r)
         trajectory_theta.append(theta)
 
+        # Calculate distance to target and check for impact
+        distance_to_target = np.sqrt((r * np.cos(theta) - target_r * np.cos(target_theta)) ** 2 +
+                                     (r * np.sin(theta) - target_r * np.sin(target_theta)) ** 2)
+
+        if distance_to_target <= 1000:
+            print(f"Impact on the asteroid at {time:.2f} seconds.")
+            break
+
         time += h
 
-    # Convertir la trayectoria a coordenadas cartesianas para la gráfica
-    x_traj = np.array(trajectory_r) * np.cos(trajectory_theta)
-    y_traj = np.array(trajectory_r) * np.sin(trajectory_theta)
-
-    # Posición del objetivo
-    target_x = target_r * np.cos(target_theta)
-    target_y = target_r * np.sin(target_theta)
-
-    # Crear la gráfica
+    # Plot in polar coordinates
     plt.figure(figsize=(8, 8))
-    plt.plot(x_traj, y_traj, label="Projectile Trajectory")
-    plt.plot(target_x, target_y, 'ro', label="Target Position (Asteroid)")
-    plt.xlabel("X Distance (m)")
-    plt.ylabel("Y Distance (m)")
-    plt.title("Projectile Trajectory towards Target")
-    plt.legend()
-    plt.grid()
-    plt.axis('equal')  # Para que las escalas de los ejes X e Y sean iguales
+    plt.polar(trajectory_theta, trajectory_r, label="Projectile Trajectory", color='purple', linewidth=1)
+    plt.polar([target_theta], [target_r], 'ro', label="Target Position (Asteroid)")
+
+    # Draw Earth as a circle at the center
+    earth_circle = plt.Circle((0, 0), R_earth, transform=plt.gca().transData._b, color='blue', alpha=0.3, label="Earth")
+    plt.gca().add_artist(earth_circle)
+
+    plt.title("Projectile Trajectory towards Target (Polar Coordinates)")
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(loc='upper right')
     plt.show()
 
 
-target_r, target_theta = 2.24775e9, 2.303834613
-
-plot_trajectory(required_vr, required_vtheta, target_r, target_theta)
+# Plot the trajectory with optimized initial velocities
+plot_trajectory_polar(required_vr, required_vtheta)
