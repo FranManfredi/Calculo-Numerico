@@ -10,6 +10,8 @@ h = 1  # Time step (increased for speed)
 target_r, target_theta = 2.24775e9, 2.303834613
 max_time = 24642  # Maximum simulation time
 
+initial_theta_guess = 280000
+initial_r_guess = initial_theta_guess/1.22e9
 
 def get_trajectory_distance(v_initial):
     """Calculate final distance from the target given initial velocities (vr, vtheta)."""
@@ -44,7 +46,7 @@ def get_trajectory_distance(v_initial):
 
 
 # Optimize initial velocities
-initial_guess = [80000, 280000]  # Initial guesses for vr and vtheta
+initial_guess = [initial_r_guess, initial_theta_guess]  # Initial guesses for vr and vtheta
 result = minimize(get_trajectory_distance, initial_guess, method='Nelder-Mead')
 required_vr, required_vtheta = result.x
 
@@ -83,7 +85,9 @@ def plot_trajectory_polar(vr_initial, vtheta_initial):
         if distance_to_target <= 1000:
             print(f"Impact on the asteroid at {time:.2f} seconds.")
             break
-
+        elif r <= R_earth:
+            print(f"Impact on Earth at {time:.2f} seconds.")
+            break
         time += h
 
     # Plot in polar coordinates
