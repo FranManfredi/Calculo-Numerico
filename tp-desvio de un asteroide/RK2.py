@@ -10,8 +10,9 @@ h = 1  # Time step (increased for speed)
 target_r, target_theta = 2.24775e9, 2.303834613
 max_time = 24642  # Maximum simulation time
 
-initial_theta_guess = 280000
-initial_r_guess = initial_theta_guess/1.22e9
+initial_theta_guess = 280000.00
+initial_r_guess = initial_theta_guess / 1.22e9
+
 
 def get_trajectory_distance(v_initial):
     """Calculate final distance from the target given initial velocities (vr, vtheta)."""
@@ -21,15 +22,7 @@ def get_trajectory_distance(v_initial):
     time = 0
 
     while time < max_time:
-        # Calculate the acceleration and update velocities and position (RK-like)
-        ar = -G * M / r ** 2
-        vr_mid = vr + 0.5 * ar * h
-        r_mid = r + 0.5 * vr * h
-        theta_mid = theta + 0.5 * vtheta * h / r if r != 0 else 0
-
-        vr += (-G * M / r_mid ** 2) * h
-        r += vr_mid * h
-        theta += vtheta * h / r if r != 0 else 0
+        vr, vtheta, r, theta = rk2_step(vr, vtheta, r, theta)
 
         # Compute distance to target
         distance_to_target = np.sqrt((r * np.cos(theta) - target_r * np.cos(target_theta)) ** 2 +
@@ -39,10 +32,31 @@ def get_trajectory_distance(v_initial):
         if distance_to_target <= 1000:
             return 0  # Successful impact
 
+        # Check if impact on Earth
+        if r <= R_earth:
+            return np.inf  # Collision with Earth
+
         time += h
 
     # Return final distance if no impact occurred
     return distance_to_target
+
+
+def rk2_step(vr, vtheta, r, theta):
+    """Perform an RK2 step for the radial and angular velocities and positions."""
+    # Calculate midpoint values
+    ar = -G * M / r ** 2
+    vr_mid = vr + 0.5 * ar * h
+    r_mid = r + 0.5 * vr * h
+    theta_mid = theta + 0.5 * vtheta * h / r if r != 0 else 0
+
+    # Recalculate accelerations at midpoint
+    ar_mid = -G * M / r_mid ** 2
+    vr_new = vr + ar_mid * h
+    r_new = r + vr_mid * h
+    theta_new = theta + vtheta * h / r_mid if r_mid != 0 else 0
+
+    return vr_new, vtheta, r_new, theta_new
 
 
 # Optimize initial velocities
@@ -65,15 +79,7 @@ def plot_trajectory_polar(vr_initial, vtheta_initial):
     trajectory_theta = [theta]
 
     while time < max_time:
-        # RK-like update
-        ar = -G * M / r ** 2
-        vr_mid = vr + 0.5 * ar * h
-        r_mid = r + 0.5 * vr * h
-        theta_mid = theta + 0.5 * vtheta * h / r if r != 0 else 0
-
-        vr += (-G * M / r_mid ** 2) * h
-        r += vr_mid * h
-        theta += vtheta * h / r if r != 0 else 0
+        vr, vtheta, r, theta = rk2_step(vr, vtheta, r, theta)
 
         trajectory_r.append(r)
         trajectory_theta.append(theta)
@@ -88,6 +94,7 @@ def plot_trajectory_polar(vr_initial, vtheta_initial):
         elif r <= R_earth:
             print(f"Impact on Earth at {time:.2f} seconds.")
             break
+
         time += h
 
     # Plot in polar coordinates
